@@ -1,0 +1,558 @@
+/* =====================================================================
+   FindU — Glass Theme (glassmorphism gelap)
+   File ini DITAMBAHKAN setelah styles.css (lihat src/main.tsx), jadi
+   ia menimpa warna/latar lama tanpa mengubah styles.css.
+   Ubah warna utama cukup dari variabel di bawah ini.
+   ===================================================================== */
+
+:root {
+  --g-text: #eaf1ff;
+  --g-muted: #9db0cc;
+  --g-soft: #c8d6ee;
+  --g-accent: #38bdf8;
+  --g-accent-2: #818cf8;
+  --g-surface: rgba(255, 255, 255, 0.06);
+  --g-surface-2: rgba(255, 255, 255, 0.1);
+  --g-border: rgba(255, 255, 255, 0.14);
+  --g-blur: blur(22px) saturate(140%);
+  --g-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --navy: #eaf1ff;
+  --muted: #9db0cc;
+  --line: rgba(255, 255, 255, 0.12);
+  font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+  color: var(--g-text);
+  background: #050813;
+}
+
+/* ---------- Latar belakang (gelombang ungu-biru-cyan) ---------- */
+body {
+  background: #050813;
+  color: var(--g-text);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(60% 45% at 85% 0%, rgba(168, 85, 247, 0.55), transparent 70%),
+    radial-gradient(70% 55% at 10% 105%, rgba(37, 99, 235, 0.6), transparent 70%),
+    radial-gradient(45% 35% at 0% 25%, rgba(14, 165, 233, 0.3), transparent 70%),
+    radial-gradient(40% 30% at 100% 70%, rgba(59, 130, 246, 0.35), transparent 70%),
+    linear-gradient(160deg, #060a1a 0%, #050813 100%);
+}
+#root { position: relative; z-index: 0; }
+
+/* ---------- Teks ---------- */
+.workspace, .page-content { color: var(--g-text); }
+.brand, .breadcrumb b, .welcome-row h1, .page-intro h1, .stat-bottom strong,
+.section-heading h2, .results-heading h2, .item-title, .upload-zone b,
+.privacy-note b, .contact-info b, .chat-item-context b, .chat-empty > b,
+.profile-summary-row b, .mobile-brand b, .toast > span, .modal-panel h2 {
+  color: #fff;
+}
+.nav-link, .brand small, .campus-tag, .icon-button, .welcome-row p, .page-intro p,
+.stat-label, .stat-note, .section-heading p, .results-heading p, .item-category,
+.item-meta, .reporter-name, .footer, .filter-label, .field-label, .field-label > span,
+.field-hint, .form-section-heading p, .upload-zone, .upload-zone small, .privacy-note p,
+.terms-note, .contact-info span, .chat-contact > small, .conversation-person span,
+.chat-item-context small, .chat-item-context span, .date-divider, .system-note,
+.chat-empty p, .message-time, .detail-info > p, .detail-meta, .detail-meta b,
+.claim-safety p, .notification-item p, .notification-item small, .notification-empty,
+.profile-page-heading > p, .profile-summary-card > p, .profile-summary-row span,
+.profile-edit-heading p, .profile-form label, .profile-form label small,
+.profile-safety-note, .results-sort, .empty-state p, .popular-search > span,
+.search-panel-title small {
+  color: var(--g-muted);
+}
+.text-link, .back-link, .profile-back, .section-kicker, .eyebrow, .heading-spark,
+.welcome-row h1 span, .page-intro h1 span, .results-heading h2 span,
+.success-screen h1 span, .clear-filter, .item-title:hover, .chat-empty button {
+  color: #7dd3fc;
+}
+.breadcrumb, .breadcrumb span { color: var(--g-muted); }
+
+/* ---------- Permukaan kaca (kartu, panel, modal) ---------- */
+.search-panel, .stat-card, .item-card, .filter-panel, .empty-state, .form-card,
+.chat-shell, .modal-panel, .profile-summary-card, .profile-edit-card,
+.notifications-popover, .privacy-note, .claim-safety, .upload-card,
+.chat-item-context, .bottom-banner {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--g-border);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  box-shadow: var(--g-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--g-text);
+}
+.search-panel, .form-card, .chat-shell, .modal-panel,
+.profile-summary-card, .profile-edit-card { border-radius: 22px; }
+.stat-card, .item-card, .filter-panel { border-radius: 18px; }
+.item-card:hover { border-color: rgba(125, 211, 252, 0.45); }
+.modal-backdrop { background: rgba(2, 6, 16, 0.62); backdrop-filter: blur(6px); }
+.notifications-popover { background: rgba(14, 22, 42, 0.85); }
+
+.topbar {
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--g-border);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+}
+.campus-tag, .icon-button, .popular-search button, .save-button, .card-arrow,
+.secondary-button, .notifications-head > button, .reporter-avatar,
+.profile-logout, .profile-edit-icon, .profile-verified {
+  background: var(--g-surface-2);
+  border: 1px solid var(--g-border);
+  color: var(--g-soft);
+}
+.icon-button:hover, .popular-search button:hover, .card-arrow:hover,
+.composer-icon:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.save-button.saved { color: #fda4af; }
+
+/* ---------- Input & pencarian ---------- */
+.hero-search, .search-input-wrap, .chat-list-search, .filters-row select,
+.field-label select, .field-label input, .field-label textarea,
+.profile-form input, .profile-form textarea, .chat-composer input {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--g-border);
+  color: #fff;
+}
+.hero-search input, .search-input-wrap input { background: transparent; color: #fff; }
+.profile-form input:disabled { background: rgba(255, 255, 255, 0.03); color: var(--g-muted); }
+.hero-search input::placeholder, .search-input-wrap input::placeholder,
+.chat-composer input::placeholder, .field-label input::placeholder,
+.field-label textarea::placeholder { color: rgba(200, 214, 238, 0.45); }
+select option { background: #0b1226; color: #fff; }
+.hero-search:focus-within, .search-input-wrap:focus-within,
+.field-label input:focus, .field-label textarea:focus, .profile-form input:focus,
+.profile-form textarea:focus, .chat-composer input:focus {
+  border-color: var(--g-accent);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.8);
+}
+
+/* ---------- Tombol utama ---------- */
+.primary-button, .submit-report, .send-button {
+  background: linear-gradient(180deg, #7dd3fc, #38bdf8 55%, #0ea5e9);
+  color: #04202e;
+  border: 0;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.primary-button:hover, .submit-report:hover, .send-button:hover { filter: brightness(1.08); }
+.primary-button:disabled { filter: grayscale(0.6); opacity: 0.55; }
+.bottom-banner button { background: #fff; color: #04202e; }
+
+/* ---------- Status, statistik, ikon ---------- */
+.status-found { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
+.status-lost  { background: rgba(251, 113, 133, 0.16); color: #fda4af; }
+.status-done  { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+.stat-purple { background: rgba(129, 140, 248, 0.18); color: #c7d2fe; }
+.stat-green  { background: rgba(52, 211, 153, 0.18); color: #6ee7b7; }
+.stat-orange { background: rgba(251, 146, 60, 0.18); color: #fdba74; }
+.search-title-icon, .empty-icon, .chat-empty-icon, .upload-graphic,
+.success-icon, .form-step, .contact-avatar, .profile-avatar-large {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  border-color: rgba(125, 211, 252, 0.3);
+}
+.item-image-button { background: rgba(255, 255, 255, 0.05); }
+.upload-zone { background: rgba(255, 255, 255, 0.04); border-color: rgba(125, 211, 252, 0.35); color: var(--g-muted); }
+.kind-switch { background: rgba(255, 255, 255, 0.07); border: 1px solid var(--g-border); }
+.kind-switch button { color: var(--g-muted); }
+.kind-switch button.selected { background: rgba(56, 189, 248, 0.22); color: #e0f2fe; }
+.form-error, .auth-error {
+  background: rgba(251, 113, 133, 0.14);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  color: #fecdd3;
+}
+
+/* ---------- Chat ---------- */
+.chat-contact:hover { background: rgba(255, 255, 255, 0.06); }
+.chat-contact.selected { background: rgba(56, 189, 248, 0.14); }
+.chat-list-head > span { background: rgba(255, 255, 255, 0.1); color: var(--g-soft); }
+.date-divider:before, .date-divider:after { background: rgba(255, 255, 255, 0.12); }
+.system-note { background: rgba(255, 255, 255, 0.06); }
+.message-bubble { background: rgba(255, 255, 255, 0.09); color: var(--g-text); border: 1px solid var(--g-border); }
+.mine .message-bubble {
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* =====================================================================
+   SIDEBAR — panel kaca melayang (seperti referensi)
+   ===================================================================== */
+.sidebar {
+  inset: 14px auto 14px 14px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  padding-top: 18px;
+  overflow-y: auto;
+}
+.glass-dots { display: flex; gap: 7px; margin: 0 0 20px 8px; }
+.glass-dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.glass-dots i:nth-child(1) { background: #ff5f57; }
+.glass-dots i:nth-child(2) { background: #febc2e; }
+.glass-dots i:nth-child(3) { background: #28c840; }
+
+.brand { letter-spacing: 1px; text-transform: uppercase; }
+.brand-mark {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+.brand > span:last-child {
+  background: linear-gradient(90deg, #60a5fa, #818cf8 60%, #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+.brand small { -webkit-text-fill-color: var(--g-muted); letter-spacing: 1.2px; }
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px 10px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #fff;
+  text-align: left;
+}
+.user-card:hover { background: rgba(255, 255, 255, 0.05); }
+.user-card .avatar-me {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.user-card .profile-text b { color: #fff; font-size: 13px; }
+.user-card .profile-text small { color: var(--g-muted); }
+.user-chevron { margin-left: auto; color: var(--g-muted); }
+
+.nav-label { color: var(--g-muted); margin: 22px 12px 10px; }
+.nav-link { border: 1px solid transparent; color: var(--g-soft); border-radius: 14px; }
+.nav-link:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.nav-link.active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+.nav-count {
+  background: #fff;
+  color: #0b1226;
+  border: 0;
+  min-width: 20px;
+  text-align: center;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.nav-divider { height: 1px; background: rgba(255, 255, 255, 0.12); margin: 10px 6px; }
+.sidebar-bottom { margin-top: auto; padding-top: 8px; }
+.nav-link.logout:hover { color: #fda4af; background: rgba(251, 113, 133, 0.1); }
+
+/* Beri ruang untuk sidebar yang melayang */
+.workspace { margin-left: 272px; }
+@media (max-width: 1200px) { .workspace { margin-left: 243px; } }
+@media (max-width: 900px) {
+  .workspace { margin-left: 102px; }
+  .glass-dots { margin-left: 0; justify-content: center; }
+  .user-card { justify-content: center; padding: 12px 0; }
+  .user-chevron { display: none; }
+}
+
+/* ---------- Mobile ---------- */
+.mobile-brand, .mobile-bottom-nav {
+  background: rgba(10, 16, 34, 0.7);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  border-color: var(--g-border);
+}
+.mobile-bottom-nav button { color: var(--g-muted); }
+.mobile-bottom-nav button.active { color: #7dd3fc; }
+.toast {
+  background: rgba(14, 22, 42, 0.85);
+  backdrop-filter: var(--g-blur);
+  border: 1px solid var(--g-border);
+  color: #fff;
+}
+@media (max-width: 620px) {
+  .workspace { margin-left: 0; }
+  body { background: #050813; }
+}
+
+/* =====================================================================
+   HALAMAN LOGIN / DAFTAR — kartu kaca di tengah layar
+   ===================================================================== */
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr;
+  place-items: center;
+  padding: 32px 18px;
+  background: transparent;
+  color: var(--g-text);
+}
+.auth-stage { position: relative; width: 100%; max-width: 460px; }
+
+/* sudut potong (chamfer) 38px */
+.auth-glass {
+  --cut: 38px;
+  padding: 1px; /* ketebalan "border" */
+  background: linear-gradient(135deg, rgba(255,255,255,.6), rgba(255,255,255,.08) 38%, rgba(56,189,248,.55) 100%);
+  clip-path: polygon(0 var(--cut), var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%);
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.5));
+}
+.auth-form-wrap {
+  max-width: none;
+  padding: 42px 36px 34px;
+  background: linear-gradient(160deg, rgba(14, 30, 52, 0.78), rgba(8, 16, 30, 0.72));
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  clip-path: polygon(0 calc(var(--cut) - 1px), calc(var(--cut) - 1px) 0, 100% 0, 100% calc(100% - var(--cut) + 1px), calc(100% - var(--cut) + 1px) 100%, 0 100%);
+}
+/* serpihan segitiga kaca di dua sudut */
+.auth-corner {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(135deg, rgba(255,255,255,.28), rgba(255,255,255,.05));
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+.auth-corner-tl { top: -8px; left: -8px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.auth-corner-br { bottom: -8px; right: -8px; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; font-weight: 800; letter-spacing: 1.5px; color: #fff; }
+.auth-logo .brand-mark { width: 34px; height: 34px; border-radius: 11px; }
+.auth-form-heading h2 {
+  font-family: 'Space Grotesk', Manrope, sans-serif;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  color: #fff;
+  margin: 0;
+}
+.auth-accent { background: linear-gradient(90deg, #7dd3fc, #38bdf8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.auth-form-heading p { color: var(--g-muted); font-size: 13px; margin: 8px 0 0; }
+.auth-form { margin-top: 26px; }
+.auth-form > label { color: #fff; font-size: 13px; font-weight: 600; }
+.auth-input {
+  background: rgba(6, 14, 28, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--g-muted);
+}
+.auth-input:focus-within { border-color: var(--g-accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }
+.auth-input input { background: transparent; color: #fff; }
+.auth-input input::placeholder { color: rgba(200, 214, 238, 0.32); }
+.password-toggle { background: none; color: var(--g-muted); border: 0; }
+
+.auth-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--g-muted); }
+.auth-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.auth-check input { width: 16px; height: 16px; accent-color: #38bdf8; }
+.auth-row button { background: none; border: 0; padding: 0; color: var(--g-muted); font-size: 12px; }
+.auth-row button:hover { color: #fff; }
+
+.auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #8bdcff, #38bdf8 55%, #0ea5e9);
+  color: #04202e;
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(14, 165, 233, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.auth-submit:hover { filter: brightness(1.07); }
+
+.auth-divider {
+  display: flex; align-items: center; gap: 12px; margin: 20px 0 14px;
+  font-size: 10px; letter-spacing: 1.3px; color: var(--g-muted);
+}
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.12); }
+.auth-social { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.auth-social button {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 11px; color: #fff; font-size: 13px;
+}
+.auth-social button:hover { background: rgba(255, 255, 255, 0.12); }
+.auth-social .g-letter { font-weight: 800; background: linear-gradient(135deg, #4285f4, #ea4335 50%, #fbbc05); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+.auth-privacy { color: var(--g-muted); justify-content: center; margin-top: 18px; }
+.auth-switch { color: var(--g-muted); text-align: center; }
+.auth-switch button { background: none; border: 0; color: #fff; font-weight: 700; }
+.auth-switch button:hover { color: #7dd3fc; }
+
+@media (max-width: 480px) {
+  .auth-form-wrap { padding: 34px 22px 28px; }
+  .auth-form-heading h2 { font-size: 28px; }
+}
+
+/* =====================================================================
+   PENYESUAIAN TAMBAHAN — bagian yang masih bergaya terang
+   ===================================================================== */
+
+/* Garis pemisah & border terang -> garis kaca tipis */
+.item-card-footer, .chat-composer, .chat-list, .conversation-head, .modal-heading,
+.notification-item, .notifications-head, .profile-form-footer, .profile-row,
+.art-orbit, .section-heading, .stat-bottom {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.profile-summary-divider { background: rgba(255, 255, 255, 0.12); }
+
+/* Beranda: ilustrasi kartu di samping judul */
+.art-orbit { border-color: rgba(125, 211, 252, 0.25); }
+.art-card { box-shadow: 0 17px 40px rgba(0, 0, 0, 0.4); }
+.art-card-back {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.45), rgba(99, 102, 241, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #e0f2fe;
+}
+.art-card-line { background: rgba(255, 255, 255, 0.55); }
+.art-card-front {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  color: #fff;
+}
+.art-card-icon { background: linear-gradient(135deg, #7dd3fc, #818cf8); color: #04202e; }
+.art-card-front > span, .art-card-dots { color: #bcd0ea; }
+.art-floating {
+  background: rgba(14, 22, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--g-soft);
+  backdrop-filter: blur(10px);
+}
+.art-floating svg { color: #6ee7b7; }
+.art-star { color: #fcd34d; }
+
+/* Pesan: avatar kontak warna-warni */
+.contact-avatar { background: rgba(129, 140, 248, 0.2); color: #c7d2fe; }
+.contact-1 { background: rgba(251, 146, 60, 0.2);  color: #fdba74; }
+.contact-2 { background: rgba(52, 211, 153, 0.2);  color: #6ee7b7; }
+.contact-3 { background: rgba(56, 189, 248, 0.2);  color: #7dd3fc; }
+.contact-4 { background: rgba(244, 114, 182, 0.2); color: #f9a8d4; }
+
+/* Detail barang (modal) */
+.detail-image { background: rgba(255, 255, 255, 0.06); }
+
+/* Notifikasi */
+.notifications-footer { background: rgba(255, 255, 255, 0.05); color: #7dd3fc; }
+.notification-item:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* Profil */
+.profile-saved, .profile-verified { color: #6ee7b7; }
+.profile-row-button:hover { background: rgba(255, 255, 255, 0.06); }
+.profile-cover { background: linear-gradient(120deg, #1e3a8a, #6d28d9 70%, #0ea5e9); }
+.profile-avatar-large { border: 2px solid rgba(255, 255, 255, 0.3); }
+
+/* Dekorasi login lama tidak dipakai lagi */
+.auth-decoration { display: none; }
+
+/* Pesan sukses di halaman login (mis. setelah atur ulang kata sandi) */
+.auth-notice {
+  background: rgba(52, 211, 153, 0.14);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #a7f3d0;
+  border-radius: 11px;
+  padding: 11px 13px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =====================================================================
+   HALAMAN PESAN — perbaikan daftar percakapan & kolom ketik
+   ===================================================================== */
+.chat-list { background: transparent; border-right: 1px solid rgba(255, 255, 255, 0.12); }
+.chat-contact {
+  background: transparent;
+  color: var(--g-text);
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.chat-contact:hover { background: rgba(255, 255, 255, 0.06); }
+.chat-contact.selected {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.08));
+  border-left-color: #38bdf8;
+}
+.contact-info b { color: #fff; }
+.contact-info span { color: var(--g-muted); }
+.chat-contact > small { color: var(--g-muted); }
+.contact-0 { background: rgba(129, 140, 248, 0.22); color: #c7d2fe; }
+.contact-4 { background: rgba(244, 114, 182, 0.22); color: #f9a8d4; }
+.chat-list-search input { background: transparent; color: #fff; border: 0; }
+.chat-list-search input::placeholder { color: rgba(200, 214, 238, 0.45); }
+
+.chat-composer { background: rgba(255, 255, 255, 0.03); gap: 10px; padding: 14px 16px; }
+.chat-composer input {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--g-border);
+  color: #fff;
+  outline: none;
+}
+.chat-composer input::placeholder { color: rgba(200, 214, 238, 0.45); }
+.composer-icon { background: transparent; border: 0; color: var(--g-muted); }
+.send-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.35);
+}
+.send-button:disabled { opacity: 0.45; box-shadow: none; filter: none; cursor: not-allowed; }
+.message-area { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
+
+/* ===== FOTO PROFIL ===== */
+.avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+.avatar, .top-avatar { overflow: hidden; }
+.profile-avatar-large .avatar-img { border-radius: 18px; }
+
+.profile-avatar-large > .avatar-camera {
+  position: absolute;
+  bottom: -3px;
+  right: -5px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+}
+.profile-avatar-large > .avatar-camera:hover { filter: brightness(1.12); }
+
+.photo-actions { display: flex; justify-content: center; gap: 8px; margin: 12px 0 2px; }
+.photo-actions button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 999px;
+  background: var(--g-surface-2); border: 1px solid var(--g-border);
+  color: var(--g-soft); font-size: 12px; font-weight: 600;
+}
+.photo-actions button:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.photo-actions button.danger:hover { color: #fda4af; border-color: rgba(251, 113, 133, 0.4); }
+.photo-error { color: #fda4af; font-size: 12px; margin: 0 0 8px; }
