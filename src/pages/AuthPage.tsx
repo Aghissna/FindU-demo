@@ -153,7 +153,7 @@ export default function AuthPage({ onSuccess }: Props) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: 'https://find-u-demo.vercel.app',
         },
       })
 
