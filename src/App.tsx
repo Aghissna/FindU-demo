@@ -1,5 +1,4 @@
-
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
   Check,
@@ -7,7 +6,19 @@ import {
   MessageCircle,
   ShieldCheck,
   X,
+  House,
+  Search,
+  Plus,
+  UserRound,
 } from 'lucide-react'
+
+import { supabase } from './lib/supabase'
+import { getUserProfile } from './lib/profileService'
+import {
+  createItem,
+  fetchItems,
+  migrateLegacyItems,
+} from './lib/itemService'
 
 import Sidebar from './components/Sidebar'
 import Modal from './components/Modal'
@@ -21,59 +32,291 @@ import ProfilePage from './pages/ProfilePage'
 
 import type { ChatMessage, Item, UserProfile } from './types'
 
+import { seedItems } from './data/seed'
 import {
   getChats,
   getItems,
+  getStoredItems,
+  hasItemsMigrationCompleted,
+  markItemsMigrationCompleted,
   saveChats,
-  saveItems,
 } from './utils/storage'
 
-const SESSION_KEY = 'findu-current-user-v1'
+function getAvatarStoragePath(url?: string): string | null {
+  if (!url) return null
 
-function getCurrentUser(): UserProfile | null {
+  const marker = '/storage/v1/object/public/avatars/'
+  const markerIndex = url.indexOf(marker)
+
+  if (markerIndex === -1) return null
+
+  const path = url.slice(markerIndex + marker.length).split('?')[0]
+
   try {
-    return JSON.parse(
-      localStorage.getItem(SESSION_KEY) || 'null',
-    ) as UserProfile | null
+    return decodeURIComponent(path)
   } catch {
-    return null
+    return path
   }
 }
 
 export default function App() {
-  const [user, setUser] = useState<UserProfile | null>(
-    () => getCurrentUser(),
-  )
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
 
   const [page, setPage] = useState('home')
 
-  const [items, setItems] = useState<Item[]>(
-    () => getItems(),
-  )
+  const [items, setItems] = useState<Item[]>(() => getItems())
+  const [chats, setChats] = useState<ChatMessage[]>([])
+  const skipNextChatSaveRef = useRef(false)
 
-  const [chats, setChats] = useState<ChatMessage[]>(
-    () => getChats(),
-  )
-
-  const [selectedItem, setSelectedItem] = useState<Item | null>(
-    null,
-  )
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [savedIds, setSavedIds] = useState<string[]>([])
   const [toast, setToast] = useState('')
 
-  // Simpan data barang setiap kali terjadi perubahan.
-  useEffect(() => {
-    saveItems(items)
-  }, [items])
+  const profileRequestRef = useRef(0)
 
-  // Simpan data percakapan setiap kali terjadi perubahan.
+  // ==========================================
+  // SUPABASE AUTH SESSION
+  // ==========================================
   useEffect(() => {
-    saveChats(chats)
-  }, [chats])
+    let active = true
 
-  // Hilangkan notifikasi setelah beberapa detik.
+    const loadProfile = async (authUser: { id: string }) => {
+      const requestId = ++profileRequestRef.current
+
+      setAuthLoading(true)
+
+      try {
+        const { data, error } = await supabase.auth.getUser()
+
+        if (error) throw error
+
+        if (!data.user || data.user.id !== authUser.id) {
+          throw new Error('Sesi pengguna tidak valid.')
+        }
+
+        const profile = await getUserProfile(data.user)
+
+        if (active && requestId === profileRequestRef.current) {
+          setUser(profile)
+          setAuthLoading(false)
+        }
+      } catch (error) {
+        console.error('Gagal memuat profil:', error)
+
+        if (active && requestId === profileRequestRef.current) {
+          setUser(null)
+          setAuthLoading(false)
+          setToast('Gagal memuat profil. Silakan masuk kembali.')
+        }
+      }
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return
+
+      if (session?.user) {
+        window.setTimeout(() => {
+          if (active) {
+            void loadProfile(session.user)
+          }
+        }, 0)
+      } else {
+        profileRequestRef.current += 1
+        setUser(null)
+        setAuthLoading(false)
+      }
+    })
+
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession()
+
+        if (error) throw error
+        if (!active) return
+
+        if (data.session?.user) {
+          await loadProfile(data.session.user)
+        } else {
+          setUser(null)
+          setAuthLoading(false)
+        }
+      } catch (error) {
+        console.error('Gagal memeriksa session:', error)
+
+        if (active) {
+          setUser(null)
+          setAuthLoading(false)
+        }
+      }
+    }
+
+    void checkSession()
+
+    return () => {
+      active = false
+      profileRequestRef.current += 1
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // ==========================================
+  // MIGRASI DATA LAMA DAN AMBIL DATA SUPABASE
+  // ==========================================
+  useEffect(() => {
+    if (!user) return
+
+    let active = true
+
+    const loadItems = async () => {
+      try {
+        // Ambil data laporan lama dari localStorage.
+        const storedItems = getStoredItems() ?? []
+
+        // Kenali ID enam data contoh bawaan aplikasi.
+        const seedIds = new Set(
+          seedItems.map((item) => item.id),
+        )
+
+        // Hanya ambil laporan lama buatan pengguna.
+        const legacyItems = storedItems.filter(
+          (item) => !seedIds.has(item.id),
+        )
+
+        // Periksa status migrasi untuk akun yang sedang login.
+        const migrationCompleted =
+          hasItemsMigrationCompleted(user.id)
+
+        if (!migrationCompleted) {
+          // Jika belum ada laporan lama, tidak perlu mengimpor.
+          if (legacyItems.length === 0) {
+            markItemsMigrationCompleted(user.id)
+          } else {
+            // Pastikan sesi Supabase masih sesuai dengan akun aktif.
+            const { data, error } = await supabase.auth.getUser()
+
+            if (error) throw error
+
+            if (!data.user || data.user.id !== user.id) {
+              throw new Error('Sesi pengguna tidak valid untuk migrasi.')
+            }
+
+            // Impor laporan lama ke Supabase.
+            const migrationResult = await migrateLegacyItems(
+              legacyItems,
+              data.user,
+              user.name || 'Mahasiswa FindU',
+            )
+
+            if (!active) return
+
+            // Jika ada yang gagal, jangan tandai migrasi selesai.
+            // Data lama tetap tersedia di localStorage.
+            if (migrationResult.failed.length > 0) {
+              console.error(
+                'Laporan gagal dimigrasikan:',
+                migrationResult.failed,
+              )
+
+              setToast(
+                `${migrationResult.imported} laporan berhasil diimpor, ${migrationResult.failed.length} gagal. Silakan coba lagi nanti.`,   
+              )
+
+              return
+            }
+
+            // Tandai selesai hanya jika seluruh laporan berhasil
+            // diimpor atau sudah pernah ada di database.
+            markItemsMigrationCompleted(user.id)
+
+            if (migrationResult.imported > 0) {
+              setToast(
+                `${migrationResult.imported} laporan lama berhasil dipindahkan ke Supabase.`,
+              )
+            }
+          }
+        }
+
+        // Ambil ulang data setelah migrasi selesai.
+        const databaseItems = await fetchItems()
+
+        if (!active) return
+
+        // Gabungkan laporan database dan data contoh.
+        // Laporan lokal lama tidak digabung lagi karena sudah
+        // diimpor ke Supabase.
+        const combinedItems = [
+          ...databaseItems,
+          ...seedItems,
+        ]
+
+        // Hindari ID yang sama tampil lebih dari sekali.
+        const uniqueItems = Array.from(
+          new Map(
+            combinedItems.map((item) => [item.id, item]),
+          ).values(),
+        )
+
+        setItems(uniqueItems)
+      } catch (error) {
+        console.error(
+          'Gagal memuat atau memigrasikan laporan:',
+          error,
+        )
+
+        if (active) {
+          setToast(
+            error instanceof Error
+              ? `Gagal memuat laporan: ${error.message}`
+              : 'Gagal memuat laporan dari database.',
+          )
+        }
+      }
+    }
+
+    void loadItems()
+
+    return () => {
+      active = false
+    }
+  }, [user?.id])
+
+  // ==========================================
+  // MUAT CHAT SESUAI AKUN LOGIN
+  // ==========================================
+  useEffect(() => {
+    if (!user?.id) {
+      setChats([])
+      return
+    }
+
+    // Cegah chat akun sebelumnya tersimpan ke akun baru.
+    skipNextChatSaveRef.current = true
+    setChats(getChats(user.id))
+  }, [user?.id])
+
+  // ==========================================
+  // SIMPAN CHAT SESUAI AKUN LOGIN
+  // ==========================================
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Lewati penyimpanan pertama setelah pergantian akun.
+    if (skipNextChatSaveRef.current) {
+      skipNextChatSaveRef.current = false
+      return
+    }
+
+    saveChats(chats, user.id)
+  }, [chats, user?.id])
+
+  // ==========================================
+  // NOTIFIKASI
+  // ==========================================
   useEffect(() => {
     if (!toast) return
 
@@ -84,7 +327,9 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
-  // Navigasi antarhalaman.
+  // ==========================================
+  // NAVIGASI
+  // ==========================================
   const navigate = (next: string) => {
     setPage(next)
     setSelectedItem(null)
@@ -95,76 +340,188 @@ export default function App() {
     })
   }
 
-  // Proses setelah pengguna berhasil login atau mendaftar.
+  // ==========================================
+  // SETELAH LOGIN BERHASIL
+  // ==========================================
   const handleAuth = (nextUser: UserProfile) => {
-    localStorage.setItem(
-      SESSION_KEY,
-      JSON.stringify(nextUser),
-    )
-
     setUser(nextUser)
     setPage('home')
 
-    setToast(
-      `Selamat datang, ${nextUser.name.split(' ')[0]}!`,
-    )
+    setToast(`Selamat datang, ${nextUser.name.split(' ')[0]}!`)
   }
 
-  // Perbarui profil pengguna.
-  const updateProfile = (nextUser: UserProfile) => {
-    localStorage.setItem(
-      SESSION_KEY,
-      JSON.stringify(nextUser),
-    )
+  // ==========================================
+  // UPDATE PROFIL DAN FOTO KE SUPABASE
+  // ==========================================
+  const updateProfile = async (
+    nextUser: UserProfile,
+  ): Promise<UserProfile> => {
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser()
 
-    setUser(nextUser)
+    if (authError) throw authError
 
-    try {
-      const key = 'findu-demo-users-v1'
-
-      const users = JSON.parse(
-        localStorage.getItem(key) || '[]',
-      )
-
-      const updated = users.map(
-        (u: UserProfile & { password: string }) =>
-          u.id === nextUser.id
-            ? { ...u, ...nextUser }
-            : u,
-      )
-
-      localStorage.setItem(
-        key,
-        JSON.stringify(updated),
-      )
-    } catch {
-      // Abaikan kesalahan pembaruan data demo.
+    if (!authData.user) {
+      throw new Error('Sesi login tidak ditemukan.')
     }
 
+    if (authData.user.id !== nextUser.id) {
+      throw new Error('Akun pengguna tidak sesuai.')
+    }
+
+    const userId = authData.user.id
+    const oldPhotoUrl = user?.photo || null
+
+    let photoUrl = nextUser.photo || null
+    let uploadedPath: string | null = null
+
+    // Jika foto berupa Data URL, unggah ke Supabase Storage.
+    if (photoUrl?.startsWith('data:image/')) {
+      const response = await fetch(photoUrl)
+      const photoBlob = await response.blob()
+
+      const filePath = `${userId}/${Date.now()}.jpg`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, photoBlob, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (uploadError) throw uploadError
+
+      uploadedPath = filePath
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      photoUrl = publicUrlData.publicUrl
+    }
+
+    const savedUser: UserProfile = {
+      ...nextUser,
+      photo: photoUrl || undefined,
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          name: savedUser.name,
+          student_id: savedUser.studentId,
+          major: savedUser.major,
+          campus: savedUser.campus,
+          bio: savedUser.bio,
+          avatar_url: photoUrl,
+        })
+        .eq('id', userId)
+        .select('id')
+        .single()
+
+      if (error) throw error
+
+      if (!data) {
+        throw new Error('Data profil tidak ditemukan di database.')
+      }
+    } catch (error) {
+      // Hapus foto baru jika penyimpanan database gagal.
+      if (uploadedPath) {
+        await supabase.storage
+          .from('avatars')
+          .remove([uploadedPath])
+      }
+
+      throw error
+    }
+
+    // Hapus foto lama setelah URL foto baru berhasil disimpan.
+    if (oldPhotoUrl && oldPhotoUrl !== photoUrl) {
+      const oldPath = getAvatarStoragePath(oldPhotoUrl)
+
+      if (oldPath) {
+        const { error: removeError } = await supabase.storage
+          .from('avatars')
+          .remove([oldPath])
+
+        if (removeError) {
+          console.warn('Foto lama gagal dihapus:', removeError.message)
+        }
+      }
+    }
+
+    setUser(savedUser)
     setToast('Profil berhasil diperbarui')
+
+    return savedUser
   }
 
-  // Keluar dari akun.
-  const logout = () => {
-    localStorage.removeItem(SESSION_KEY)
+  // ==========================================
+  // LOGOUT SUPABASE
+  // ==========================================
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
 
-    setUser(null)
-    setPage('home')
-    setToast('Kamu sudah keluar dari akun')
+      if (error) throw error
+
+      setUser(null)
+      setPage('home')
+      setSelectedItem(null)
+      setToast('Kamu sudah keluar dari akun')
+    } catch (error) {
+      console.error('Gagal logout:', error)
+
+      setToast(
+        error instanceof Error
+          ? error.message
+          : 'Gagal keluar dari akun.',
+      )
+    }
   }
 
-  // Simpan kata kunci pencarian.
+  // ==========================================
+  // PENCARIAN
+  // ==========================================
   const openSearch = (value: string) => {
     setSearchQuery(value)
   }
 
-  // Tambahkan laporan barang baru.
-  const addItem = (item: Item) => {
-    setItems((prev) => [item, ...prev])
+  // ==========================================
+  // TAMBAH LAPORAN BARANG KE SUPABASE
+  // ==========================================
+  const addItem = async (item: Item): Promise<void> => {
+    const { data, error } = await supabase.auth.getUser()
+
+    if (error) throw error
+
+    if (!data.user) {
+      throw new Error('Sesi login tidak ditemukan. Silakan login kembali.')
+    }
+
+    if (!user) {
+      throw new Error('Profil pengguna belum tersedia.')
+    }
+
+    const savedItem = await createItem(
+      item,
+      data.user,
+      user.name || 'Mahasiswa FindU',
+    )
+
+    setItems((prev) => [
+      savedItem,
+      ...prev.filter((existing) => existing.id !== savedItem.id),
+    ])
+
     setToast('Laporan berhasil dipublikasikan')
   }
 
-  // Tambahkan atau hapus barang dari daftar simpanan.
+  // ==========================================
+  // SIMPAN / HAPUS BARANG
+  // ==========================================
   const toggleSave = (id: string) => {
     const isSaved = savedIds.includes(id)
 
@@ -174,27 +531,27 @@ export default function App() {
         : [...prev, id],
     )
 
-    setToast(
-      isSaved
-        ? 'Dihapus dari simpanan'
-        : 'Barang disimpan',
-    )
+    setToast(isSaved ? 'Dihapus dari simpanan' : 'Barang disimpan')
   }
 
-  // Tambahkan pesan ke percakapan.
+  // ==========================================
+  // KIRIM PESAN
+  // ==========================================
   const sendMessage = (message: ChatMessage) => {
     setChats((prev) => [...prev, message])
     setToast('Pesan tersimpan di percakapan demo')
   }
 
-  // Hitung jumlah barang yang memiliki percakapan.
+  // ==========================================
+  // HITUNG JUMLAH CHAT
+  // ==========================================
   const chatCount = useMemo(() => {
-    return new Set(
-      chats.map((chat) => chat.itemId),
-    ).size
+    return new Set(chats.map((chat) => chat.itemId)).size
   }, [chats])
 
-  // Mulai proses klaim melalui percakapan.
+  // ==========================================
+  // PROSES KLAIM BARANG
+  // ==========================================
   const claim = (item: Item) => {
     const message: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -214,7 +571,39 @@ export default function App() {
     setToast('Permintaan klaim dimulai melalui chat')
   }
 
-  // Jika belum login, tampilkan halaman autentikasi.
+  // ==========================================
+  // LOADING SESSION
+  // ==========================================
+  if (authLoading) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-stage">
+          <div className="auth-glass">
+            <div className="auth-form-wrap">
+              <div className="auth-logo">
+                <span className="brand-mark">
+                  <MessageCircle size={18} />
+                </span>
+                FINDU
+              </div>
+
+              <div className="auth-form-heading">
+                <h2>
+                  Memuat <span className="auth-accent">FindU</span>
+                </h2>
+
+                <p>Sedang memeriksa sesi akun kamu...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ==========================================
+  // JIKA BELUM LOGIN
+  // ==========================================
   if (!user) {
     return (
       <>
@@ -240,6 +629,9 @@ export default function App() {
     )
   }
 
+  // ==========================================
+  // TAMPILAN UTAMA FINDU
+  // ==========================================
   return (
     <div className="app-shell">
       <Sidebar
@@ -317,7 +709,7 @@ export default function App() {
         )}
       </div>
 
-      {/* Modal detail barang */}
+      {/* MODAL DETAIL BARANG */}
       {selectedItem && (
         <Modal
           title="Detail barang"
@@ -367,8 +759,7 @@ export default function App() {
                 </span>
 
                 <span>
-                  Dilaporkan oleh{' '}
-                  <b>{selectedItem.reporter}</b>
+                  Dilaporkan oleh <b>{selectedItem.reporter}</b>
                 </span>
               </div>
             </div>
@@ -398,9 +789,7 @@ export default function App() {
               <button
                 className="primary-button"
                 onClick={() => claim(selectedItem)}
-                disabled={
-                  selectedItem.status === 'Dikembalikan'
-                }
+                disabled={selectedItem.status === 'Dikembalikan'}
               >
                 {selectedItem.status === 'Hilang'
                   ? 'Saya punya informasi'
@@ -413,7 +802,7 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Notifikasi */}
+      {/* NOTIFIKASI */}
       {toast && (
         <div className="toast">
           <span>
@@ -431,13 +820,14 @@ export default function App() {
         </div>
       )}
 
-      {/* Navigasi versi mobile */}
+      
+      {/* NAVIGASI MOBILE */}
       <div className="mobile-bottom-nav">
         <button
           className={page === 'home' ? 'active' : ''}
           onClick={() => navigate('home')}
         >
-          <span>⌂</span>
+          <House size={21} strokeWidth={2} />
           Beranda
         </button>
 
@@ -445,22 +835,23 @@ export default function App() {
           className={page === 'search' ? 'active' : ''}
           onClick={() => navigate('search')}
         >
-          <span>⌕</span>
+          <Search size={21} strokeWidth={2} />
           Cari
         </button>
 
         <button
           className="mobile-add"
           onClick={() => navigate('report')}
+          aria-label="Laporkan barang"
         >
-          <span>＋</span>
+          <Plus size={25} strokeWidth={2.5} />
         </button>
 
         <button
           className={page === 'chat' ? 'active' : ''}
           onClick={() => navigate('chat')}
         >
-          <span>▤</span>
+          <MessageCircle size={21} strokeWidth={2} />
           Pesan
         </button>
 
@@ -468,7 +859,7 @@ export default function App() {
           className={page === 'profile' ? 'active' : ''}
           onClick={() => navigate('profile')}
         >
-          <span>◉</span>
+          <UserRound size={21} strokeWidth={2} />
           Profil
         </button>
       </div>

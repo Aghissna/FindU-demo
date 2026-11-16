@@ -16,7 +16,7 @@ import type { Item } from '../types'
 
 type Props = {
   onBack: () => void
-  onSubmit: (item: Item) => void
+  onSubmit: (item: Item) => Promise<void>
 }
 
 const categories = [
@@ -45,21 +45,21 @@ export default function ReportPage({
   onBack,
   onSubmit,
 }: Props) {
-  // State Formulir
   const [kind, setKind] = useState<'lost' | 'found'>('lost')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('Elektronik')
   const [location, setLocation] = useState('Perpustakaan Pusat')
   const [date, setDate] = useState(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   )
   const [description, setDescription] = useState('')
   const [reporter, setReporter] = useState('Alexandra R.')
   const [image, setImage] = useState('')
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  // Memproses Foto yang Dipilih
+  // Memproses foto yang dipilih
   const handleFile = (file?: File) => {
     if (!file) return
 
@@ -90,31 +90,34 @@ export default function ReportPage({
     reader.readAsDataURL(file)
   }
 
-  // Mengirim Laporan
-  const submit = (e: FormEvent<HTMLFormElement>) => {
+  // Mengirim laporan ke Supabase melalui App.tsx
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    if (submitting) return
+
     setError('')
 
     if (!title.trim() || !description.trim()) {
       setError(
-        'Isi nama barang dan deskripsi terlebih dahulu.'
+        'Isi nama barang dan deskripsi terlebih dahulu.',
       )
       return
     }
 
+    if (!date) {
+      setError('Pilih tanggal kejadian terlebih dahulu.')
+      return
+    }
+
     const newItem: Item = {
-      id: `item-${Date.now()}`,
+      id: crypto.randomUUID(),
       title: title.trim(),
       category,
       location,
 
-      date: new Date(
-        `${date}T12:00:00`
-      ).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
+      // Simpan dalam format DATE: YYYY-MM-DD
+      date,
 
       description: description.trim(),
 
@@ -127,11 +130,27 @@ export default function ReportPage({
       kind,
     }
 
-    onSubmit(newItem)
-    setDone(true)
+    try {
+      setSubmitting(true)
+
+      await onSubmit(newItem)
+
+      // Halaman berhasil hanya muncul setelah penyimpanan sukses.
+      setDone(true)
+    } catch (err) {
+      console.error('Gagal mempublikasikan laporan:', err)
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Laporan gagal disimpan. Silakan coba lagi.',
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  // Halaman Berhasil
+  // Halaman berhasil
   if (done) {
     return (
       <div className="page-content">
@@ -151,8 +170,8 @@ export default function ReportPage({
             </h1>
 
             <p>
-              Laporanmu sudah ditambahkan ke daftar barang
-              FindU. Semoga cepat bertemu pemiliknya!
+              Laporanmu berhasil disimpan ke database FindU.
+              Semoga barangnya segera bertemu dengan pemiliknya!
             </p>
 
             <button
@@ -170,11 +189,11 @@ export default function ReportPage({
 
   return (
     <div className="page-content">
-      {/* Header */}
       <header className="topbar">
         <button
           className="back-link"
           onClick={onBack}
+          disabled={submitting}
         >
           <ArrowLeft size={16} />
           Kembali
@@ -189,7 +208,6 @@ export default function ReportPage({
       </header>
 
       <main className="main-inner report-main">
-        {/* Judul Halaman */}
         <div className="page-intro">
           <div className="eyebrow">
             <Camera size={14} />
@@ -207,12 +225,10 @@ export default function ReportPage({
           </p>
         </div>
 
-        {/* Formulir Laporan */}
         <form
           className="report-layout"
           onSubmit={submit}
         >
-          {/* Informasi Barang */}
           <section className="form-card">
             <div className="form-section-heading">
               <span className="form-step">01</span>
@@ -225,14 +241,12 @@ export default function ReportPage({
               </div>
             </div>
 
-            {/* Jenis Laporan */}
             <div className="kind-switch">
               <button
                 type="button"
-                className={
-                  kind === 'lost' ? 'selected' : ''
-                }
+                className={kind === 'lost' ? 'selected' : ''}
                 onClick={() => setKind('lost')}
+                disabled={submitting}
               >
                 <span className="kind-dot lost-dot" />
                 Saya kehilangan
@@ -240,17 +254,15 @@ export default function ReportPage({
 
               <button
                 type="button"
-                className={
-                  kind === 'found' ? 'selected' : ''
-                }
+                className={kind === 'found' ? 'selected' : ''}
                 onClick={() => setKind('found')}
+                disabled={submitting}
               >
                 <span className="kind-dot found-dot" />
                 Saya menemukan
               </button>
             </div>
 
-            {/* Nama Barang */}
             <label className="field-label">
               Nama barang <span>*</span>
 
@@ -260,19 +272,18 @@ export default function ReportPage({
                 placeholder="Contoh: Tumbler hijau sage"
                 required
                 maxLength={70}
+                disabled={submitting}
               />
             </label>
 
-            {/* Kategori dan Tanggal */}
             <div className="form-two-col">
               <label className="field-label">
                 Kategori
 
                 <select
                   value={category}
-                  onChange={(e) =>
-                    setCategory(e.target.value)
-                  }
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={submitting}
                 >
                   {categories.map((c) => (
                     <option key={c} value={c}>
@@ -290,19 +301,18 @@ export default function ReportPage({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
+                  disabled={submitting}
                 />
               </label>
             </div>
 
-            {/* Lokasi */}
             <label className="field-label">
               Lokasi
 
               <select
                 value={location}
-                onChange={(e) =>
-                  setLocation(e.target.value)
-                }
+                onChange={(e) => setLocation(e.target.value)}
+                disabled={submitting}
               >
                 {places.map((p) => (
                   <option key={p} value={p}>
@@ -312,19 +322,17 @@ export default function ReportPage({
               </select>
             </label>
 
-            {/* Deskripsi Barang */}
             <label className="field-label">
               Deskripsi barang <span>*</span>
 
               <textarea
                 value={description}
-                onChange={(e) =>
-                  setDescription(e.target.value)
-                }
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Warna, merek, lokasi detail, atau ciri umum lainnya..."
                 rows={4}
                 maxLength={600}
                 required
+                disabled={submitting}
               />
 
               <small className="field-hint">
@@ -333,23 +341,19 @@ export default function ReportPage({
               </small>
             </label>
 
-            {/* Nama Pelapor */}
             <label className="field-label">
               Nama pelapor
 
               <input
                 value={reporter}
-                onChange={(e) =>
-                  setReporter(e.target.value)
-                }
+                onChange={(e) => setReporter(e.target.value)}
                 placeholder="Nama panggilanmu"
+                disabled={submitting}
               />
             </label>
           </section>
 
-          {/* Panel Samping */}
           <aside className="form-side">
-            {/* Upload Foto */}
             <div className="form-card upload-card">
               <div className="form-section-heading">
                 <span className="form-step">02</span>
@@ -397,10 +401,12 @@ export default function ReportPage({
 
                 <input
                   type="file"
-                  accept="image/*"
-                  onChange={(e) =>
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={submitting}
+                  onChange={(e) => {
                     handleFile(e.target.files?.[0])
-                  }
+                    e.currentTarget.value = ''
+                  }}
                 />
               </label>
 
@@ -408,6 +414,7 @@ export default function ReportPage({
                 <button
                   type="button"
                   className="remove-image"
+                  disabled={submitting}
                   onClick={() => {
                     setImage('')
                     setError('')
@@ -419,7 +426,6 @@ export default function ReportPage({
               )}
             </div>
 
-            {/* Informasi Privasi */}
             <div className="privacy-note">
               <ShieldCheck size={19} />
 
@@ -433,22 +439,21 @@ export default function ReportPage({
               </div>
             </div>
 
-            {/* Pesan Kesalahan */}
             {error && (
-              <p
-                className="form-error"
-                role="alert"
-              >
+              <p className="form-error" role="alert">
                 {error}
               </p>
             )}
 
-            {/* Tombol Publikasi */}
             <button
               className="primary-button submit-report"
               type="submit"
+              disabled={submitting}
             >
-              Publikasikan laporan
+              {submitting
+                ? 'Menyimpan laporan...'
+                : 'Publikasikan laporan'}
+
               <ArrowRight size={17} />
             </button>
 

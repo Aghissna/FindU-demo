@@ -30,10 +30,16 @@ export default function ChatPage({
   onSend,
   onOpenItem,
 }: Props) {
-  // State percakapan aktif
-  const [activeId, setActiveId] = useState(
-    items[0]?.id || ''
+  // ==========================================
+  // DAFTAR PERCAKAPAN
+  // Hanya barang yang sudah memiliki pesan.
+  // ==========================================
+  const conversationItems = items.filter((item) =>
+    chats.some((chat) => chat.itemId === item.id)
   )
+
+  // State percakapan aktif
+  const [activeId, setActiveId] = useState('')
 
   // State tampilan chat khusus mobile
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -45,7 +51,7 @@ export default function ChatPage({
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Data percakapan aktif
-  const activeItem = items.find(
+  const activeItem = conversationItems.find(
     (item) => item.id === activeId
   )
 
@@ -54,33 +60,47 @@ export default function ChatPage({
     (chat) => chat.itemId === activeId
   )
 
-  // Scroll otomatis ke pesan terakhir
+  // ==========================================
+  // PILIH PERCAKAPAN AKTIF
+  // ==========================================
+  useEffect(() => {
+    const activeExists = conversationItems.some(
+      (item) => item.id === activeId
+    )
+
+    if (!activeExists) {
+      setActiveId(conversationItems[0]?.id || '')
+      setIsChatOpen(false)
+    }
+  }, [items, chats, activeId])
+
+  // ==========================================
+  // SCROLL OTOMATIS KE PESAN TERAKHIR
+  // ==========================================
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: 'smooth',
     })
   }, [messages.length, activeId])
 
-  // Jika item aktif dihapus, pilih item lain
-  useEffect(() => {
-    if (!items.some((item) => item.id === activeId)) {
-      setActiveId(items[0]?.id || '')
-      setIsChatOpen(false)
-    }
-  }, [items, activeId])
-
-  // Membuka percakapan
+  // ==========================================
+  // MEMBUKA PERCAKAPAN
+  // ==========================================
   const openChat = (itemId: string) => {
     setActiveId(itemId)
     setIsChatOpen(true)
   }
 
-  // Kembali ke daftar percakapan
+  // ==========================================
+  // KEMBALI KE DAFTAR PERCAKAPAN
+  // ==========================================
   const backToChatList = () => {
     setIsChatOpen(false)
   }
 
-  // Mengirim pesan
+  // ==========================================
+  // MENGIRIM PESAN
+  // ==========================================
   const send = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -150,7 +170,7 @@ export default function ChatPage({
 
             <div className="chat-list-head">
               <h2>Pesan</h2>
-              <span>{items.length}</span>
+              <span>{conversationItems.length}</span>
             </div>
 
             <div className="chat-list-search">
@@ -161,7 +181,7 @@ export default function ChatPage({
               />
             </div>
 
-            {items.map((item, i) => {
+            {conversationItems.map((item, i) => {
               const lastMessage = chats
                 .filter(
                   (chat) => chat.itemId === item.id
@@ -206,12 +226,15 @@ export default function ChatPage({
               )
             })}
 
-            {items.length === 0 && (
+            {conversationItems.length === 0 && (
               <div className="chat-empty">
                 <MessageCircle size={30} />
+
                 <b>Belum ada percakapan</b>
+
                 <p>
-                  Pilih laporan barang untuk memulai.
+                  Kamu belum memiliki percakapan.
+                  Buka laporan barang untuk mulai menghubungi pelapor.
                 </p>
               </div>
             )}
@@ -430,7 +453,8 @@ export default function ChatPage({
                 <b>Belum ada percakapan</b>
 
                 <p>
-                  Pilih laporan barang untuk memulai.
+                  Percakapan yang kamu mulai akan muncul di sini.
+                  Silakan pilih laporan barang untuk menghubungi pelapor.
                 </p>
               </div>
 
