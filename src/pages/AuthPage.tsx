@@ -140,6 +140,7 @@ export default function AuthPage({ onSuccess }: Props) {
     }
   }
 
+  
   // ==================================
   // LOGIN GOOGLE
   // ==================================
@@ -149,7 +150,7 @@ export default function AuthPage({ onSuccess }: Props) {
     setBusy(true)
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
@@ -158,6 +159,11 @@ export default function AuthPage({ onSuccess }: Props) {
 
       if (error) throw error
 
+      if (!data.url) {
+        throw new Error('URL autentikasi Google tidak ditemukan.')
+      }
+
+      // Supabase akan mengarahkan browser ke Google.
     } catch (err) {
       setError(
         err instanceof Error
@@ -168,6 +174,7 @@ export default function AuthPage({ onSuccess }: Props) {
       setBusy(false)
     }
   }
+
 
   // ==================================
   // GANTI MODE LOGIN / REGISTER
